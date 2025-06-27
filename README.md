@@ -6,5 +6,9 @@
  make the graphic interface too! well.. using web, not exactly a graphic window because I mainly use this on my phone anyways, and termux can't do anything relating to graphic except if I use proot or some sort, which is a hassle and kind of draining my battery too.. so yeah.
  <br>
 <br>
- Not much to say currently, but I really want to make this README.md hehe :3c<br>
- Well, that's all I wanted to say. 😄 for now..
+The GUI version is far from done, and I am postponing this project until I gain more interest and have some spare time. So I suggest to just download `meg.py`, if you want to give this a try at least.  
+I am considering to change the approach of the GUI version as well, so it could have a very significant change later. But the original version, the simpler one, will most likely be up-to-date.  
+<br>
+<br>
+ Well, that's all I wanted to say. 😄  
+ Have a nice day!
