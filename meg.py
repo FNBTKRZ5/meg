@@ -21,19 +21,29 @@ import configparser
 import re
 from termcolor import cprint, colored
 import time
-from datetime import datetime as dt
+from datetime import datetime as dt, date, timezone
 import os
 import json
 from tabulate import tabulate
 import signal as sg
 import sys
 import meg_f
+import numpy as np
+
 
 os.chdir(os.path.abspath(os.path.dirname(__file__))) #to avoid if it has the same issues regarding the working dir
 setin=configparser.ConfigParser()
-setin.read("meg_stg.ini")
-enable_timer=setin["DEFAULT"]["enable_timer"]
-isLocal=setin["DEFAULT"]["isLocal"]
+try:
+  setin.read("meg_stg.ini")
+
+  enable_timer=setin["DEFAULT"]["enable_timer"]
+  isLocal=setin["DEFAULT"]["isLocal"]
+  maxnum=int(setin["DEFAULT"]["maxnum"])
+except:
+  enable_timer=False
+  isLocal=True
+  maxnum=99
+
 pl=True #to start the looping of the game until it stopped
 tq=0 #number of question solved
 tf=0 #number of failed attempts
@@ -50,32 +60,51 @@ def handle_exit(signum, frame):
   sys.exit()
 sg.signal(sg.SIGINT, handle_exit)
 
+
 #the mathematics branches
 opran = meg_f.opran  
+
 
 #action
 if(len(trd)==0):
   cprint(" you don't have any saved history to show. ", "magenta", "on_white")
 else: #show leaderboard (if the data exist)
   besc=[]
+  totalneeded=10
   for i in trd:
     t=trd[i].copy()
     t["datetime"]=i
     besc.append(t)
-  hdr=["\033[38;5;214mRank\033[0m", colored("Time", "yellow"), colored("Time Record","light_red"), colored("TSolved", "light_green"), colored("Score", "light_magenta")]
-  besc = sorted(besc,
-    key=lambda x: (-x["score"], -x["total_solved"], dt.strptime(x["time_record"], "%H:%M:%S.%f")))
-  if(len(besc)<5): #add an addition if data is less than 5, just for placeholder
-    for i in range(5-len(besc)):
-      besc.append({"time_record":".", "datetime":".", "total_solved":".", "score":"."})
-  b_esc=[]
-  for i, v in enumerate(besc):
-    b_esc.append([i+1, v["datetime"], v["time_record"], v["total_solved"], v["score"]])
-  cprint("Your TOP 5 Score", "light_blue", "on_white")
-  print(tabulate(b_esc[0:5], headers=hdr,tablefmt="grid", colalign=("center", "center", "center", "center","center")), "\n")
+  hdr=["\033[38;5;214mRank\033[0m", colored("Time", "yellow"), colored("Time Record","light_red"), colored("TSolved", "light_green"), colored("Score", "light_magenta"), colored("cap", "light_blue")]
+  
+  if ( len(besc) > 1 ):
+    necat = ["total_solved", "time_record", "score", "number_cap"]
+    wecat = [0.95, 0.93, 0.92, 0.87]
+    
+    bt = np.array([[int(y[x]) if x!="time_record" else dt.combine(date(1970,1,1), dt.strptime(y[x], "%H:%M:%S.%f").time()).replace(tzinfo=timezone.utc).timestamp() for x in necat] for y in besc])
+    bt = (bt - bt.min(axis=0))/(bt.max(axis=0)-bt.min(axis=0))
+    bt[:, 1] = 1 - bt[:, 1]
+    bt = bt @ np.array([x/sum(wecat) for x in wecat])
+    for i, x in zip(besc, bt):
+      i["combined_values"]=float(x)
+    besc.sort(key=lambda x: -x["combined_values"])
+  #ask user which mode to show leaderboard
+  print("Choose the display mode to show the leaderboard")
+  cprint("md [0] or normal [1]? (pick the index)", "yellow")
+  
+  deffmt="grid"
+  tablefmtopt=input(">")
+  tablefmtopt= "pipe" if tablefmtopt=="0" else "grid" if tablefmtopt=="1" else deffmt
+  
+  cprint(f"Your TOP {totalneeded} Records", "light_blue", "on_white")
+  print(tabulate([[i+1, v["datetime"], v["time_record"], v["total_solved"], v["score"], v["number_cap"]] for i,v in enumerate(besc)][0:totalneeded], headers=hdr,tablefmt=tablefmtopt, colalign=("center", "center", "center", "center","center")), "\n")
+
 
 #waits for the user to start the game
-input("Press [ENTER] to start..!  "+colored("or Press [CTRL]+C to exit.", "dark_grey"))
+enterornot=input("Press [ENTER] to start..!  "+colored("or Press [CTRL]+C or any elm to exit.", "dark_grey"))
+if (len(enterornot)):
+  cprint("jusf want to peek, huh?\nalrighty, cya!\n\n", "light_red")
+  sys.exit()
 print(".\n.\n.\n") #just a divider
 if(enable_timer):
   tmr = time.time() #start a timer
@@ -88,7 +117,10 @@ while(pl):
     try:
       usr=re.sub("\\s", "", input("Your answer: "))
       if(len(usr)==0): #quit/stop immediately if empty
-        pl=False
+        conf=input(colored("Type anything to confirm your exits then press [ENTER]! :)\n*the time still running even when you're here.", "light_yellow"))
+        if(conf):
+          pl=False
+        else: continue
       elif(float(usr)!=res):
         tf+=1 #increment of the failed attempt
         continue
@@ -116,11 +148,12 @@ if(tq==0): #if no question is solved
 else: scr=round((tq-tf)/tq*100,1)
 #result of the session
 cprint(f"""Oh!.. Okay.
+Today's date is {date.today()}
 Here's your score: {scr}
 You failed: {tf} time(s)
 You solved: {tq} problem(s)""", "cyan")
 if(enable_timer):
-  cprint(f"You did it in {hr:02}:{mins:02}:{secs:02} !", "cyan")
+  cprint(f"You did it in {hr:02}:{mins:02}:{secs:06.3f} !", "cyan")
 elif(scr>95):
   cprint("Ayy that's such score! You should challenge yourself and do it with a timer >:D")
 if(tq!=0):
@@ -138,9 +171,10 @@ if(tq!=0):
           b.append(re.sub("[\\(\\)]", "", a.group()))
       cdt+=" ("+str(int(max(b))+1)+")"
     trd.update({cdt: {
-        "time_record": f"{hr:02}:{mins:02}:{secs:02}",
+        "time_record": f"{hr:02}:{mins:02}:{secs:06.3f}",
         "total_solved": tq,
-        "score": scr
+        "score": scr,
+        "number_cap": maxnum
       }})
     if isLocal:
       with open(strd, "w+") as f:
