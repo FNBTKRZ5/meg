@@ -1,3 +1,4 @@
 meg_score*.json
 meg_stg*.ini
 __pycache__/*
+test*

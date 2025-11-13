@@ -13,10 +13,11 @@ branch of mathematics / puzzle i wanted to add:
 > Statistic
 > Series of numbers
 > KPK & FPB
-
-The settings is in a file named meg_stg.ini
 """
 #preparing
+from meg_f import (mathprob, 
+ ENABLE_TIMER, ISLOCAL, MAXNUM, RECORD_DISPLAY, WARN_IGNORE)
+
 import configparser
 import re
 from termcolor import cprint, colored
@@ -27,27 +28,15 @@ import json
 from tabulate import tabulate
 import signal as sg
 import sys
-import meg_f
 import numpy as np
 
 
 os.chdir(os.path.abspath(os.path.dirname(__file__))) #to avoid if it has the same issues regarding the working dir
-setin=configparser.ConfigParser()
-try:
-  setin.read("meg_stg.ini") #the name of the file for saved settings is here!
-
-  enable_timer=setin["DEFAULT"]["enable_timer"]
-  isLocal=setin["DEFAULT"]["isLocal"]
-  maxnum=int(setin["DEFAULT"]["maxnum"])
-except:
-  enable_timer=True
-  isLocal=True
-  maxnum=99
 
 pl=True #to start the looping of the game until it stopped
 tq=0 #number of question solved
 tf=0 #number of failed attempts
-if isLocal:
+if ISLOCAL:
   strd="meg_score.json" #path to the saved score
   try:
     with open(strd) as f:
@@ -59,10 +48,6 @@ def handle_exit(signum, frame):
   cprint("Alright!..\nStopping the program...", "red")
   sys.exit()
 sg.signal(sg.SIGINT, handle_exit)
-
-
-#the mathematics branches
-opran = meg_f.opran  
 
 
 #action
@@ -90,11 +75,18 @@ else: #show leaderboard (if the data exist)
     besc.sort(key=lambda x: -x["combined_values"])
   #ask user which mode to show leaderboard
   print("Choose the display mode to show the leaderboard")
-  cprint("md [0] or normal [1]? (pick the index)", "yellow")
+  cprint("md [1] or normal [2]? (pick the index)", "yellow")
   
-  deffmt="grid"
-  tablefmtopt=input(">")
-  tablefmtopt= "pipe" if tablefmtopt=="0" else "grid" if tablefmtopt=="1" else deffmt
+  deffmt="grid" #the default value
+  if (RECORD_DISPLAY == "0"):
+    tablefmtopt=input(">")
+  elif (int(RECORD_DISPLAY) <= 2):
+    tablefmtopt=RECORD_DISPLAY
+  else:
+    if not WARN_IGNORE:
+      cprint("[ERROR - saved settings] Invalid value: on the <record_display> option, please set a valid value as explained in the comments.", "light_red")
+    tablefmtopt="this fall to the default"
+  tablefmtopt= "pipe" if tablefmtopt=="1" else "grid" if tablefmtopt=="2" else deffmt
   
   cprint(f"Your TOP {totalneeded} Records", "light_blue", "on_white")
   print(tabulate([[i+1, v["datetime"], v["time_record"], v["total_solved"], v["score"], v["number_cap"]] for i,v in enumerate(besc)][0:totalneeded], headers=hdr,tablefmt=tablefmtopt, colalign=("center", "center", "center", "center","center")), "\n")
@@ -106,12 +98,12 @@ if (len(enterornot)):
   cprint("jusf want to peek, huh?\nalrighty, cya!\n\n", "light_red")
   sys.exit()
 print(".\n.\n.\n") #just a divider
-if(enable_timer):
+if(ENABLE_TIMER):
   tmr = time.time() #start a timer
   cdt=dt.now()
 nitr=1 #question index
 while(pl):
-  n1, n2, op, res=meg_f.mathprob() #generate problems
+  n1, n2, op, res=mathprob() #generate problems
   print(f"{nitr}.]  {n1} {op} {n2} = ?")
   while(True): #loop until answer is correct
     try:
@@ -130,7 +122,7 @@ while(pl):
       cprint("Number Only.", "light_red")
   nitr+=1
 
-if(enable_timer): #stopwatch
+if(ENABLE_TIMER): #stopwatch
   et = time.time() - tmr
   hr,mins,secs=0,0,0
   if(et//3600!=0): #if it contains at least an hour
@@ -152,7 +144,7 @@ Today's date is {date.today()}
 Here's your score: {scr}
 You failed: {tf} time(s)
 You solved: {tq} problem(s)""", "cyan")
-if(enable_timer):
+if(ENABLE_TIMER):
   cprint(f"You did it in {hr:02}:{mins:02}:{secs:06.3f} !", "cyan")
 elif(scr>95):
   cprint("Ayy that's such score! You should challenge yourself and do it with a timer >:D")
@@ -174,9 +166,9 @@ if(tq!=0):
         "time_record": f"{hr:02}:{mins:02}:{secs:06.3f}",
         "total_solved": tq,
         "score": scr,
-        "number_cap": maxnum
+        "number_cap": MAXNUM
       }})
-    if isLocal:
+    if ISLOCAL:
       with open(strd, "w+") as f:
         json.dump(trd, f, indent=2, separators=(",",": "))
       print("Has been saved locally!")
