@@ -34,13 +34,13 @@ import numpy as np
 os.chdir(os.path.abspath(os.path.dirname(__file__))) #to avoid if it has the same issues regarding the working dir
 setin=configparser.ConfigParser()
 try:
-  setin.read("meg_stg.ini")
+  setin.read("meg_stg.ini") #the name of the file for saved settings is here!
 
   enable_timer=setin["DEFAULT"]["enable_timer"]
   isLocal=setin["DEFAULT"]["isLocal"]
   maxnum=int(setin["DEFAULT"]["maxnum"])
 except:
-  enable_timer=False
+  enable_timer=True
   isLocal=True
   maxnum=99
 
