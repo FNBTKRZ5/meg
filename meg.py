@@ -94,14 +94,18 @@ else: #show leaderboard (if the data exist)
 
 
 #waits for the user to start the game
-enterornot=input("Press [ENTER] to start..!  "+colored("or Press [CTRL]+C or any elm to exit.", "dark_grey"))
+enterornot=input("Press [ENTER] to start..!  "+colored("or Press [CTRL]+C or any input before [ENTER] to exit.", "dark_grey"))
+
+
 if (len(enterornot)):
   cprint("jusf want to peek, huh?\nalrighty, cya!\n\n", "light_red")
   sys.exit()
+
+
 print(".\n.\n.\n") #just a divider
-if(ENABLE_TIMER):
-  tmr = time.time() #start a timer
-  cdt=dt.now()
+
+if(ENABLE_TIMER):  tmr = time.time() #start a timer
+
 nitr=1 #question index
 while(pl):
   n1, n2, op, res=mathprob() #generate problems
@@ -110,10 +114,13 @@ while(pl):
     try:
       usr=re.sub("\\s", "", input("Your answer: "))
       if(len(usr)==0): #quit/stop immediately if empty
+        temp_tmr = time.time() # pause point
         conf=input(colored("Type anything to confirm your exits then press [ENTER]! :)\n*the time still running even when you're here.", "light_yellow"))
         if(conf):
           pl=False
-        else: continue
+        else:
+          if ENABLE_TIMER:  tmr += (time.time() - temp_tmr) #unpause
+          continue
       elif(float(usr)!=res):
         tf+=1 #increment of the failed attempt
         continue
@@ -127,7 +134,7 @@ while(pl):
 
 if(tq==0): #if no question is solved
   scr="N/A"
-  cprint("Score is invalid because you didn't finish solving any question.", "light_red")
+  cprint("Score is invalid because you didn't finish any question.", "light_red")
 else: scr=round((tq-tf)/tq*100,1)
 
 
@@ -136,9 +143,11 @@ if (scr == "N/A"):
   cprint("""You didn't do any:/
 welp, here's your score anyways: N/A
 hehe :P""")
+  sys.exit()
 else:
   res_comment= (
-  "Uh... well, at least you were doing something :T" if scr < 0 else
+  "Umm.. wanna try again?" if scr <= 0 else
+  "Uh... well, at least you were doing something :T" if scr <= 27 else
   "Good enough, let's see the result.." if scr <= 57 else
   "Nice..! Keep it up :D" if scr <= 78 else
   ":D Well done! Here's your performance.." if scr <= 88 else
@@ -152,12 +161,11 @@ Today's date is {date.today()}
 Here's your score: {scr}
 You failed: {tf} time(s)
 You solved: {tq} problem(s)""", "cyan")
-if(scr=>95):
+if(scr>=95):
   cprint("Ayy that's such score! You should challenge yourself and do it with a timer >:D")
 
 
 if(ENABLE_TIMER):
-  cprint(f"You did it in {hr:02}:{mins:02}:{secs:06.3f} !", "cyan")
   #managing the stopwatch
   et = time.time() - tmr
   hr,mins,secs=0,0,0
@@ -170,6 +178,8 @@ if(ENABLE_TIMER):
     secs=et%60
   else: secs=et
   secs=round(secs,3)
+  
+  cprint(f"You did it in {hr:02}:{mins:02}:{secs:06.3f} !", "cyan")
   
   if(tq!=0):
     usr=input("want to save your score? [Y?]\n*Skipping or anything outside the option will cancel this action.\n>").lower()
