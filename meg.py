@@ -92,6 +92,7 @@ else: #show leaderboard (if the data exist)
   print(tabulate([[i+1, v["datetime"], v["time_record"], v["total_solved"], v["score"], v["number_cap"]] for i,v in enumerate(besc)][0:totalneeded], headers=hdr,tablefmt=tablefmtopt, colalign=("center", "center", "center", "center","center")), "\n")
 
 
+
 #waits for the user to start the game
 enterornot=input("Press [ENTER] to start..!  "+colored("or Press [CTRL]+C or any elm to exit.", "dark_grey"))
 if (len(enterornot)):
@@ -122,7 +123,42 @@ while(pl):
       cprint("Number Only.", "light_red")
   nitr+=1
 
-if(ENABLE_TIMER): #stopwatch
+
+
+if(tq==0): #if no question is solved
+  scr="N/A"
+  cprint("Score is invalid because you didn't finish solving any question.", "light_red")
+else: scr=round((tq-tf)/tq*100,1)
+
+
+#result of the session
+if (scr == "N/A"):
+  cprint("""You didn't do any:/
+welp, here's your score anyways: N/A
+hehe :P""")
+else:
+  res_comment= (
+  "Uh... well, at least you were doing something :T" if scr < 0 else
+  "Good enough, let's see the result.." if scr <= 57 else
+  "Nice..! Keep it up :D" if scr <= 78 else
+  ":D Well done! Here's your performance.." if scr <= 88 else
+  "Oh! Would you look at that! SEE, SEE!" if scr <= 98 else
+  "DUDDEEE, score.. ALMOST THERE!... Welp" if scr == 99 else
+  "THAT's so.. PERRRFECT! B]" if scr == 100 else
+  "what.. no, no way >:[=") #the last bit is just for a fallback
+  
+cprint(f"""{res_comment}
+Today's date is {date.today()}
+Here's your score: {scr}
+You failed: {tf} time(s)
+You solved: {tq} problem(s)""", "cyan")
+if(scr=>95):
+  cprint("Ayy that's such score! You should challenge yourself and do it with a timer >:D")
+
+
+if(ENABLE_TIMER):
+  cprint(f"You did it in {hr:02}:{mins:02}:{secs:06.3f} !", "cyan")
+  #managing the stopwatch
   et = time.time() - tmr
   hr,mins,secs=0,0,0
   if(et//3600!=0): #if it contains at least an hour
@@ -134,41 +170,29 @@ if(ENABLE_TIMER): #stopwatch
     secs=et%60
   else: secs=et
   secs=round(secs,3)
-if(tq==0): #if no question is solved
-  scr="N/A"
-  cprint("Score is invalid because you didn't finish solving any question.", "light_red")
-else: scr=round((tq-tf)/tq*100,1)
-#result of the session
-cprint(f"""Oh!.. Okay.
-Today's date is {date.today()}
-Here's your score: {scr}
-You failed: {tf} time(s)
-You solved: {tq} problem(s)""", "cyan")
-if(ENABLE_TIMER):
-  cprint(f"You did it in {hr:02}:{mins:02}:{secs:06.3f} !", "cyan")
-elif(scr>95):
-  cprint("Ayy that's such score! You should challenge yourself and do it with a timer >:D")
-if(tq!=0):
-  usr=input("want to save your score? [Y?]\n*Skipping or anything outside the option will cancel this action.\n>").lower()
-  if(usr=="y"):
-    cdt=dt.now().strftime("%d/%m/%y")
-    if cdt in trd and not (cdt+" (2)" in trd): # if this is the second attempt on the same day
-      cdt+=" (2)"
-      print("2")
-    elif cdt+" (2)" in trd: #if more than 2 attempts
-      b=[]
-      for i in trd.items():
-        a=re.search("\\(\\d+\\)$", i[0])
-        if a:
-          b.append(re.sub("[\\(\\)]", "", a.group()))
-      cdt+=" ("+str(int(max(b))+1)+")"
-    trd.update({cdt: {
-        "time_record": f"{hr:02}:{mins:02}:{secs:06.3f}",
-        "total_solved": tq,
-        "score": scr,
-        "number_cap": MAXNUM
-      }})
-    if ISLOCAL:
-      with open(strd, "w+") as f:
-        json.dump(trd, f, indent=2, separators=(",",": "))
-      print("Has been saved locally!")
+  
+  if(tq!=0):
+    usr=input("want to save your score? [Y?]\n*Skipping or anything outside the option will cancel this action.\n>").lower()
+    if(usr=="y"):
+      cdt=dt.now().strftime("%d/%m/%y")
+      if cdt in trd and not (cdt+" (2)" in trd): # if this is the second attempt on the same day
+        cdt+=" (2)"
+        print("2")
+      elif cdt+" (2)" in trd: #if more than 2 attempts
+        b=[]
+        for i in trd.items():
+          a=re.search("\\(\\d+\\)$", i[0])
+          if a:
+            b.append(re.sub("[\\(\\)]", "", a.group()))
+        cdt+=" ("+str(int(max(b))+1)+")"
+        
+      trd.update({cdt: {
+          "time_record": f"{hr:02}:{mins:02}:{secs:06.3f}",
+          "total_solved": tq,
+          "score": scr,
+          "number_cap": MAXNUM
+        }})
+      if ISLOCAL:
+        with open(strd, "w+") as f:
+          json.dump(trd, f, indent=2, separators=(",",": "))
+        print("Has been saved locally!")
